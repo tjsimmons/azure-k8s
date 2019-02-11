@@ -45,12 +45,13 @@ resource "azurerm_virtual_network" "kubernetes-vnet" {
 }
 
 resource "azurerm_subnet" "kubernetes-subnet" {
-    name = "kubernetes-subnet"
-    address_prefix = "10.240.0.0/24"
-    resource_group_name = "${azurerm_resource_group.kubernetes.name}"
-    virtual_network_name = "${azurerm_virtual_network.kubernetes-vnet.name}"
-    # deprecated with v2 of azurerm
-    network_security_group_id = "${azurerm_network_security_group.kubernetes-nsg.id}"
+  name                 = "kubernetes-subnet"
+  address_prefix       = "10.240.0.0/24"
+  resource_group_name  = "${azurerm_resource_group.kubernetes.name}"
+  virtual_network_name = "${azurerm_virtual_network.kubernetes-vnet.name}"
+
+  # deprecated with v2 of azurerm
+  network_security_group_id = "${azurerm_network_security_group.kubernetes-nsg.id}"
 }
 
 resource "azurerm_lb" "kubernetes-lb" {
@@ -93,10 +94,10 @@ resource "azurerm_public_ip" "controllers-pip" {
 }
 
 resource "azurerm_network_interface" "nics" {
-  count               = 3
-  name                = "controller-${count.index}-nic"
-  location            = "${azurerm_resource_group.kubernetes.location}"
-  resource_group_name = "${azurerm_resource_group.kubernetes.name}"
+  count                = 3
+  name                 = "controller-${count.index}-nic"
+  location             = "${azurerm_resource_group.kubernetes.location}"
+  resource_group_name  = "${azurerm_resource_group.kubernetes.name}"
   enable_ip_forwarding = true
 
   ip_configuration {
@@ -105,17 +106,17 @@ resource "azurerm_network_interface" "nics" {
     private_ip_address_allocation = "Static"
     public_ip_address_id          = "${element(azurerm_public_ip.controllers-pip.*.id, count.index)}"
     subnet_id                     = "${azurerm_subnet.kubernetes-subnet.id}"
+
     # deprecated
     load_balancer_backend_address_pools_ids = ["${azurerm_lb_backend_address_pool.kubernetes-lb-pool.id}"]
   }
 }
 
 resource "azurerm_virtual_machine" "controllers" {
-    count = 3
-    name = "controller-${count.index}"
-    location = "${azurerm_resource_group.kubernetes.location}"
-    resource_group_name = "${azurerm_resource_group.kubernetes.name}"
-    network_interface_ids = ["${element(azurerm_network_interface.nics.*.id, count.index)}"]
-    vm_size = "Standard_DS1_v2"
+  count                 = 3
+  name                  = "controller-${count.index}"
+  location              = "${azurerm_resource_group.kubernetes.location}"
+  resource_group_name   = "${azurerm_resource_group.kubernetes.name}"
+  network_interface_ids = ["${element(azurerm_network_interface.nics.*.id, count.index)}"]
+  vm_size               = "Standard_DS1_v2"
 }
-
