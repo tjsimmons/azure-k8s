@@ -41,7 +41,7 @@ resource "azurerm_virtual_network" "kubernetes-vnet" {
   name                = "kubernetes-vnet"
   location            = "${azurerm_resource_group.kubernetes.location}"
   resource_group_name = "${azurerm_resource_group.kubernetes.name}"
-  address_space       = ["10.0.0.0/16"]
+  address_space       = ["10.240.0.0/16"]
 }
 
 resource "azurerm_subnet" "kubernetes-subnet" {
@@ -83,12 +83,14 @@ resource "azurerm_availability_set" "controller-as" {
   name                = "controller-as"
   location            = "${azurerm_resource_group.kubernetes.location}"
   resource_group_name = "${azurerm_resource_group.kubernetes.name}"
+  managed             = "true"
 }
 
 resource "azurerm_availability_set" "worker-as" {
   name                = "worker-as"
   location            = "${azurerm_resource_group.kubernetes.location}"
   resource_group_name = "${azurerm_resource_group.kubernetes.name}"
+  managed             = "true"
 }
 
 resource "azurerm_public_ip" "controller-pips" {
@@ -135,7 +137,7 @@ resource "azurerm_network_interface" "worker-nics" {
 
   ip_configuration {
     name                          = "worker-nic-${count.index}"
-    private_ip_address            = "10.240.0.1${count.index}"
+    private_ip_address            = "10.240.0.2${count.index}"
     private_ip_address_allocation = "Static"
     public_ip_address_id          = "${element(azurerm_public_ip.worker-pips.*.id, count.index)}"
     subnet_id                     = "${azurerm_subnet.kubernetes-subnet.id}"
@@ -156,13 +158,13 @@ resource "azurerm_virtual_machine" "controllers" {
 
     ssh_keys {
       key_data = "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAACAQDXUIzLabfNAiiSxPucR/QznuEeue68/KwNISJJ8KXiwv0rQkaaqfFYIiWU84VM4fGzRLeK1QqhNwux3/iYP6QdX+FIjPlMGRBLK+g70gVEtCyxbAHhH1rJUS4cxdVPB3hTT9ncE3rGlSeGXmlYDNWf+PFJ9/dXH2TcSSyJWX+5gKbfSibrYJXlviYIp8K9g6w5TDo/2DMTZdGjwg1bEL4PdqxnqHcwADA2XwgonBbzXWb+pj6c2j3y/xiweuCCu3esw+c+6LQTPMrovOuMl/+bRl3E282IHA6CCjrv0vIgii/aXi3PKn31mpx0If+870+gXh1Q+NluDFsE0IlDgci6i8tukeEoNnhu9vzJxtUTHk3XBrU0Msqo5f5HRJ4cLEQ0rc6szEmukfLy3jcIY8gal8Vmn3jwBTj5gFFqqVI5B/6E3RXuqSE7Exemi7BpTWcYAiemk2CrGlwcns7lBu2eGQkwjXZlsorzd30O7EkJ3tc2ZCSIodfAcOdqJfgXnhm6e6ttzw5ZPy+h4r33BHjDM44dxFC3vBjdo3rFpyRvbyclTaZ60fD1y9yhCfDmB3NrIRANyWHEB0qloOqQhPDRx4AMjXdMEDft9ppm2QrVOp7Czn7OPLoDCRIclzkl+lL0e4hcQ4kk2NbH42iZ9N/AWdppRUR5XBXCYwp8OsDX4Q== primary_yubikey"
-      path     = "/home/admin/.ssh/authorized_keys"
+      path     = "/home/kuberoot/.ssh/authorized_keys"
     }
   }
 
   os_profile {
     computer_name  = "controller-${count.index}"
-    admin_username = "admin"
+    admin_username = "kuberoot"
   }
 
   storage_image_reference {
@@ -173,11 +175,11 @@ resource "azurerm_virtual_machine" "controllers" {
   }
 
   storage_os_disk {
-    name          = "controller-${count.index}-os"
-    create_option = "FromImage"
-    caching       = "ReadWrite"
-    disk_size_gb  = "30"
-    os_type       = "Linux"
+    name              = "controller-${count.index}-os"
+    create_option     = "FromImage"
+    caching           = "ReadWrite"
+    disk_size_gb      = "32"
+    managed_disk_type = "Standard_LRS"
   }
 }
 
@@ -195,13 +197,13 @@ resource "azurerm_virtual_machine" "workers" {
 
     ssh_keys {
       key_data = "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAACAQDXUIzLabfNAiiSxPucR/QznuEeue68/KwNISJJ8KXiwv0rQkaaqfFYIiWU84VM4fGzRLeK1QqhNwux3/iYP6QdX+FIjPlMGRBLK+g70gVEtCyxbAHhH1rJUS4cxdVPB3hTT9ncE3rGlSeGXmlYDNWf+PFJ9/dXH2TcSSyJWX+5gKbfSibrYJXlviYIp8K9g6w5TDo/2DMTZdGjwg1bEL4PdqxnqHcwADA2XwgonBbzXWb+pj6c2j3y/xiweuCCu3esw+c+6LQTPMrovOuMl/+bRl3E282IHA6CCjrv0vIgii/aXi3PKn31mpx0If+870+gXh1Q+NluDFsE0IlDgci6i8tukeEoNnhu9vzJxtUTHk3XBrU0Msqo5f5HRJ4cLEQ0rc6szEmukfLy3jcIY8gal8Vmn3jwBTj5gFFqqVI5B/6E3RXuqSE7Exemi7BpTWcYAiemk2CrGlwcns7lBu2eGQkwjXZlsorzd30O7EkJ3tc2ZCSIodfAcOdqJfgXnhm6e6ttzw5ZPy+h4r33BHjDM44dxFC3vBjdo3rFpyRvbyclTaZ60fD1y9yhCfDmB3NrIRANyWHEB0qloOqQhPDRx4AMjXdMEDft9ppm2QrVOp7Czn7OPLoDCRIclzkl+lL0e4hcQ4kk2NbH42iZ9N/AWdppRUR5XBXCYwp8OsDX4Q== primary_yubikey"
-      path     = "/home/admin/.ssh/authorized_keys"
+      path     = "/home/kuberoot/.ssh/authorized_keys"
     }
   }
 
   os_profile {
     computer_name  = "worker-${count.index}"
-    admin_username = "admin"
+    admin_username = "kuberoot"
   }
 
   storage_image_reference {
@@ -212,11 +214,11 @@ resource "azurerm_virtual_machine" "workers" {
   }
 
   storage_os_disk {
-    name          = "worker-${count.index}-os"
-    create_option = "FromImage"
-    caching       = "ReadWrite"
-    disk_size_gb  = "30"
-    os_type       = "Linux"
+    name              = "worker-${count.index}-os"
+    create_option     = "FromImage"
+    caching           = "ReadWrite"
+    disk_size_gb      = "32"
+    managed_disk_type = "Standard_LRS"
   }
 
   tags {
