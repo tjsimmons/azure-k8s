@@ -1,8 +1,5 @@
 # WHAT IT IS
-A repo for me to store terraform configs.
+A repo for me to store everything needed to follow the excellent [Kubernetes The Hard Way on Azure](https://github.com/ivanfioravanti/kubernetes-the-hard-way-on-azure) in an easily repeatable fashion.
 
-# WHAT I SHOULD DO
-Iunno, make separate repos for entire apps/configs and throw terraform configs and ansible playbooks where they logically belong.
-
-# TODO (beyond WHAT I SHOULD DO)
+# TODO
 * Break up the monolithic azure-k8s.tf file into separate files based on resource type/purpose.
