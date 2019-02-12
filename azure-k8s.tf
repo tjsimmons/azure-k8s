@@ -7,7 +7,7 @@ variable "controller_count" {
 }
 
 variable "worker_count" {
-  default = "4"
+  default = "3"
 }
 
 resource "azurerm_resource_group" "kubernetes" {
