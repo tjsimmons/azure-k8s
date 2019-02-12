@@ -2,6 +2,14 @@ provider "azurerm" {
   version = "=1.22.0"
 }
 
+variable "controller_count" {
+  default = "3"
+}
+
+variable "worker_count" {
+  default = "4"
+}
+
 resource "azurerm_resource_group" "kubernetes" {
   name     = "kubernetes"
   location = "southcentralus"
@@ -94,7 +102,7 @@ resource "azurerm_availability_set" "worker-as" {
 }
 
 resource "azurerm_public_ip" "controller-pips" {
-  count               = 3
+  count               = "${var.controller_count}"
   name                = "controller-${count.index}-pip"
   resource_group_name = "${azurerm_resource_group.kubernetes.name}"
   location            = "${azurerm_resource_group.kubernetes.location}"
@@ -102,7 +110,7 @@ resource "azurerm_public_ip" "controller-pips" {
 }
 
 resource "azurerm_public_ip" "worker-pips" {
-  count               = 3
+  count               = "${var.worker_count}"
   name                = "worker-${count.index}-pip"
   resource_group_name = "${azurerm_resource_group.kubernetes.name}"
   location            = "${azurerm_resource_group.kubernetes.location}"
@@ -110,7 +118,7 @@ resource "azurerm_public_ip" "worker-pips" {
 }
 
 resource "azurerm_network_interface" "controller-nics" {
-  count                = 3
+  count                = "${var.controller_count}"
   name                 = "controller-${count.index}-nic"
   location             = "${azurerm_resource_group.kubernetes.location}"
   resource_group_name  = "${azurerm_resource_group.kubernetes.name}"
@@ -129,7 +137,7 @@ resource "azurerm_network_interface" "controller-nics" {
 }
 
 resource "azurerm_network_interface" "worker-nics" {
-  count                = 3
+  count                = "${var.worker_count}"
   name                 = "worker-${count.index}-nic"
   location             = "${azurerm_resource_group.kubernetes.location}"
   resource_group_name  = "${azurerm_resource_group.kubernetes.name}"
@@ -145,7 +153,7 @@ resource "azurerm_network_interface" "worker-nics" {
 }
 
 resource "azurerm_virtual_machine" "controllers" {
-  count                 = 3
+  count                 = "${var.controller_count}"
   name                  = "controller-${count.index}"
   location              = "${azurerm_resource_group.kubernetes.location}"
   resource_group_name   = "${azurerm_resource_group.kubernetes.name}"
@@ -184,7 +192,7 @@ resource "azurerm_virtual_machine" "controllers" {
 }
 
 resource "azurerm_virtual_machine" "workers" {
-  count                 = 3
+  count                 = "${var.worker_count}"
   name                  = "worker-${count.index}"
   location              = "${azurerm_resource_group.kubernetes.location}"
   resource_group_name   = "${azurerm_resource_group.kubernetes.name}"
